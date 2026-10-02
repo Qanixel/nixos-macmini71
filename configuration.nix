@@ -9,6 +9,8 @@
     ./mpfan.nix
     ./bilibili.nix
     ./timer.nix
+    ./pipewire.nix
+    ./flatpak.nix
   ];
 
   # ==================== 引导与系统基础 ====================
@@ -94,14 +96,14 @@
   # ==================== 音频与服务 ====================
   services.printing.enable = false;
 
-  services.pulseaudio.enable = false;
-  security.rtkit.enable = true;
-  services.pipewire = {
-    enable = true;
-    alsa.enable = true;
-    alsa.support32Bit = true;
-    pulse.enable = true;
-  };
+  #services.pulseaudio.enable = false;
+  #security.rtkit.enable = true;
+  #services.pipewire = {
+  #  enable = true;
+  #  alsa.enable = true;
+  #  alsa.support32Bit = true;
+  #  pulse.enable = true;
+  #};
 
   services.openssh.enable = true;
 
