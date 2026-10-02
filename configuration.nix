@@ -6,9 +6,9 @@
 
 {
   imports = [
-    ./hardware-configuration.nix
     ./mpfan.nix
     ./bilibili.nix
+    ./timer.nix
   ];
 
   # ==================== 引导与系统基础 ====================
