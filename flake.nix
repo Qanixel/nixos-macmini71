@@ -1,18 +1,29 @@
 {
-  description = "A simple flake.nix";
+  description = "Qanix's Nixos configuration";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
+    home-manager.url = "github:nix-community/home-manager/release-26.05";
+    home-manager.inputs.nixpkgs.follows = "nixpkgs";
   };
+  
+  # homemanager 的说明： follow 关键字用于继承，release-26.05 用于 与 nixos 保持一致
+  # 记得inputs里写完后下面output要继承
 
-  outputs = { self, nixpkgs, ... }: {
+  outputs = inputs@{ self, nixpkgs, home-manager, ... }: {
     nixosConfigurations = {
-      # Macmini is the host name definded in configration.nix
       Macmini = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux"; # Match the system strugles
+        system = "x86_64-linux";
         modules = [
           ./hardware-configuration.nix
           ./configuration.nix
+          home-manager.nixosModules.home-manager
+          {
+            home-manager.useGlobalPkgs = true;
+            home-manager.useUserPackages = true;
+            home-manager.extraSpecialArgs = { inherit inputs ; };
+            home-manager.users.qanix = ./home.nix;
+          }
         ];
       };
     };
