@@ -102,8 +102,8 @@
   # git 相关配置
   programs.git = {
     enable = true;
-    settings.userName = "Qanix";
-    settings.userEmail = "Qanix@outlook.it";
+    settings.user.name = "Qanix";
+    settings.user.email = "Qanix@outlook.it";
   };
 
   # 启用 starship，这是一个漂亮的 shell 提示符

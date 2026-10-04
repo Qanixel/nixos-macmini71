@@ -13,6 +13,8 @@
     ./flatpak.nix
   ];
 
+  mirrors.enable = true;
+
   # ==================== 引导与系统基础 ====================
   boot.loader.systemd-boot.enable = true;
   boot.loader.systemd-boot.configurationLimit = 5;
