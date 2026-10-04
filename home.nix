@@ -1,6 +1,11 @@
 { config, pkgs, ... }:
 
 {
+  
+  imports = [
+    ./spotify.nix
+  ];
+  
   # 注意修改这里的用户名与用户目录
   home.username = "qanix";
   home.homeDirectory = "/home/qanix";
@@ -96,7 +101,7 @@
     usbutils # lsusb
 
     # some software
-    spotify
+    # xxx
   ];
 
   # git 相关配置
@@ -145,7 +150,7 @@
     # TODO 设置一些别名方便使用，你可以根据自己的需要进行增删
     shellAliases = {
       k = "kubectl";
-      ns = "sudo nixos-rebuild switch --flake ~/.nixos-config.#Macmini";
+      nu = "sudo nixos-rebuild switch --flake /home/qanix/nixos-config#Macmini";
     };
   };
 

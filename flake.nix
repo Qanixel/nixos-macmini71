@@ -7,6 +7,8 @@
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
     
     mirrors-nix.url = "github:luochen1990/mirrors-nix";
+    
+    spicetify-nix.url = "github:Gerg-L/spicetify-nix";
   };
   
   # homemanager 的说明： follow 关键字用于继承，release-26.05 用于 与 nixos 保持一致
@@ -16,10 +18,11 @@
     nixosConfigurations = {
       Macmini = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
+        specialArgs = { inherit inputs; };
         modules = [
           ./hardware-configuration.nix
           ./configuration.nix
-          mirrors-nix.nixosModules.default
+          mirrors-nix.nixosModules.default 
           home-manager.nixosModules.home-manager
           {
             home-manager.useGlobalPkgs = true;
