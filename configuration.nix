@@ -11,6 +11,7 @@
     ./timer.nix
     ./pipewire.nix
     ./flatpak.nix
+    ./remote.nix
   ];
 
   mirrors.enable = true;
@@ -58,23 +59,27 @@
   services.xserver.enable = true;
 
   services.xserver.displayManager.lightdm.enable = true;
-
   services.displayManager.autoLogin.enable = true;
   services.displayManager.autoLogin.user = "qanix";
 
-  # 配置 PAM 允许 qanix 在 lightdm 服务中无需密码登录
-  security.pam.services.lightdm = {
-    text = ''
-      auth requisite pam_nologin.so
-      auth sufficient pam_succeed_if.so user = qanix
-      auth include login
-      account include login
-      password include login
-      session include login
-    '';
-  };
-
   services.xserver.desktopManager.xfce.enable = true;
+
+  # Kerying
+  services.gnome.gnome-keyring.enable = true; 
+  security.pam.services.lightdm.enableGnomeKeyring = true;
+
+  # 配置 PAM 允许 qanix 在 lightdm 服务中无需密码登录
+  # security.pam.services.lightdm = {
+  #   text = ''
+  #    auth requisite pam_nologin.so
+  #    auth sufficient pam_succeed_if.so user = qanix
+  #    auth include login
+  #    account include login
+  #    password include login
+  #    session include login
+  #  '';
+  #};
+
   services.xserver.autoRepeatDelay = 200;
   services.xserver.autoRepeatInterval = 30;
 

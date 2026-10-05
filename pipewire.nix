@@ -2,7 +2,7 @@
 
 let
   # 可在此处方便地调整音量硬上限百分比（例如设置为 30，或设为 null 完全关闭限制）
-  ampMaxVolumePercent = 50;
+  ampMaxVolumePercent = 60;
 in
 {
   # ═══════════════════════════════════════════════════════════
@@ -50,7 +50,7 @@ in
                   # 显式写出下限（默认就是 0，写出来是为了让规则自解释）
                   "channelmix.min-volume" = 0.0;
                   # 提示：若想让滑块也锁死，可取消下方注释
-                  # "channelmix.lock-volumes" = true;
+                  "channelmix.lock-volumes" = true;
                 };
               }
             ];
