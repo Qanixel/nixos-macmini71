@@ -116,14 +116,14 @@
 
   security.sudo.wheelNeedsPassword = false;
 
-  programs.firefox.enable = true
+  programs.firefox.enable = true;
   programs.fish.enable = true;
   programs.zsh.enable = true;
 
 
   environment.variables.EDITOR = "vim";
   environment.systemPackages = with pkgs; [
-    vim
+    vim-full
     git
     curl
     pciutils

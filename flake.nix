@@ -29,6 +29,7 @@
             home-manager.useUserPackages = true;
             home-manager.extraSpecialArgs = { inherit inputs ; };
             home-manager.users.qanix = ./home.nix;
+            home-manager.backupFileExtension = "backup";
           }
         ];
       };
