@@ -66,7 +66,8 @@
 
   # Kerying
   services.gnome.gnome-keyring.enable = true; 
-  security.pam.services.lightdm.enableGnomeKeyring = true;
+  security.pam.services.login.enableGnomeKeyring = true;
+  programs.seahorse.enable = true;
 
   # 配置 PAM 允许 qanix 在 lightdm 服务中无需密码登录
   # security.pam.services.lightdm = {
@@ -100,31 +101,24 @@
     }
   ];
 
-  # ==================== 音频与服务 ====================
   services.printing.enable = false;
-
-  #services.pulseaudio.enable = false;
-  #security.rtkit.enable = true;
-  #services.pipewire = {
-  #  enable = true;
-  #  alsa.enable = true;
-  #  alsa.support32Bit = true;
-  #  pulse.enable = true;
-  #};
-
   services.openssh.enable = true;
 
   # ==================== 用户与软件包 ====================
+
   users.users."qanix" = {
     isNormalUser = true;
     description = "Qanix";
     extraGroups = [ "networkmanager" "wheel" ];
     packages = with pkgs; [];
+    shell = pkgs.zsh;
   };
 
   security.sudo.wheelNeedsPassword = false;
 
-  programs.firefox.enable = true;
+  programs.firefox.enable = true
+  programs.fish.enable = true;
+  programs.zsh.enable = true;
 
 
   environment.variables.EDITOR = "vim";
@@ -134,7 +128,6 @@
     curl
     pciutils
     wget
-    fish
   ];
 
   # ==================== 系统维护与 GC ====================
