@@ -39,6 +39,8 @@
     fastfetch
     nnn # terminal file manager
     yazi
+    bat
+    lsd
 
     # archives
     zip
@@ -141,13 +143,6 @@
   programs.bash = {
     enable = true;
     enableCompletion = true;
-
-    # TODO 在这里添加你的自定义 bashrc 内容
-    #bashrcExtra = ''
-    #  export PATH="$PATH:$HOME/bin:$HOME/.local/bin:$HOME/go/bin"
-    #'';
-
-    # TODO 设置一些别名方便使用，你可以根据自己的需要进行增删
     shellAliases = {
       k = "kubectl";
       nu = "sudo nixos-rebuild switch --flake /home/qanix/nixos-config#Macmini";
@@ -160,8 +155,9 @@
     autosuggestion.enable = true;
     syntaxHighlighting.enable = true;
     shellAliases = {
-      k = "kubectl";
       nu = "sudo nixos-rebuild switch --flake /home/qanix/nixos-config#Macmini";
+      ls = "lsd";
+      
     };
     oh-my-zsh = {
       enable = true;

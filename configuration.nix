@@ -12,6 +12,8 @@
     ./pipewire.nix
     ./flatpak.nix
     ./remote.nix
+    ./server.nix
+    ./desktop.nix
   ];
 
   mirrors.enable = true;
@@ -55,54 +57,8 @@
     "broadcom-sta-6.30.223.271-59-6.18.54"
   ];
 
-  # ==================== 桌面环境与 1080p 分辨率优化 ====================
-  services.xserver.enable = true;
-
-  services.xserver.displayManager.lightdm.enable = true;
-  services.displayManager.autoLogin.enable = true;
-  services.displayManager.autoLogin.user = "qanix";
-
-  services.xserver.desktopManager.xfce.enable = true;
-
-  # Kerying
-  services.gnome.gnome-keyring.enable = true; 
-  security.pam.services.login.enableGnomeKeyring = true;
-  programs.seahorse.enable = true;
-
-  # 配置 PAM 允许 qanix 在 lightdm 服务中无需密码登录
-  # security.pam.services.lightdm = {
-  #   text = ''
-  #    auth requisite pam_nologin.so
-  #    auth sufficient pam_succeed_if.so user = qanix
-  #    auth include login
-  #    account include login
-  #    password include login
-  #    session include login
-  #  '';
-  #};
-
-  services.xserver.autoRepeatDelay = 200;
-  services.xserver.autoRepeatInterval = 30;
-
-  services.xserver.xkb = {
-    layout = "us";
-    variant = "";
-  };
-
-  # 通过 Xorg 配置文件强制将外接显示器默认/最大分辨率限制为 1080p
-  # 注：若你的外接接口名称不是 HDMI-1 或 DP-1，可通过 xrandr 查看后修改
-  services.xserver.xrandrHeads = [
-    {
-      output = "HDMI-2";
-      primary = true;
-      monitorConfig = ''
-        Option "PreferredMode" "1920x1080"
-      '';
-    }
-  ];
 
   services.printing.enable = false;
-  services.openssh.enable = true;
 
   # ==================== 用户与软件包 ====================
 
