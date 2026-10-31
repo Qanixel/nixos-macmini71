@@ -14,6 +14,7 @@
     ./remote.nix
     ./server.nix
     ./desktop.nix
+    ./terminal.nix
   ];
 
   mirrors.enable = true;
