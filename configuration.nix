@@ -56,6 +56,7 @@
   nixpkgs.config.allowUnfree = true;
   nixpkgs.config.permittedInsecurePackages = [
     "broadcom-sta-6.30.223.271-59-6.18.54"
+    "broadcom-sta-6.30.223.271-59-7.2.7"
   ];
 
 
