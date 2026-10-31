@@ -4,33 +4,24 @@
 #
 #  ── 好消息：不需要自己打包 ──────────────────────────────────
 #  nixpkgs 26.05 里已经有 `pkgs.bilibili`（构建自上游 msojocs/bilibili-linux
-#  的官方 .deb，用系统 Electron 运行）。所以这里只做两件事：
-#    1. 安装它（VA-API 参数已在 hosts/macmini/default.nix 的 overlay 里注入）
-#    2. 提供备用播放路径 + 把"为什么还卡"的排查方法写清楚
+#  的官方 .deb，用系统 Electron 运行）。这里只做两件事：
+#    1. 安装官方客户端与备用播放工具
+#    2. 把"为什么还卡"的排查方法写清楚
 #
 #  ── 关键背景：Haswell 只能硬解 H.264 ────────────────────────
-#  详见 hosts/macmini/graphics.nix。结论就一句：
 #      **B 站必须让它在 AVC(H.264) 上解码，绝不能让 HEVC/AV1 落到软解。**
-#  旧系统 Backup/Desktop/bilibili注意事项.txt 已经踩过这个坑：
 #      B 站客户端 → 播放器右下角齿轮 → 更多播放设置 → 解码策略 → 选「AVC 解码」
-#  这条经验完全正确，本配置予以保留（写进 docs/备份迁移说明.md）。
 #
 #  ⚠️ 客户端内的解码策略设置是**存在服务端账号里**的，重装系统后
 #     用同一账号登录通常会自动带回来；如果发现没有，按上面路径再设一次。
 # ─────────────────────────────────────────────────────────────
-{
-  config,
-  lib,
-  pkgs,
-  params,
-  ...
-}:
+{ pkgs, ... }:
 {
   environment.systemPackages =
     with pkgs;
     [
       # ── 官方桌面客户端 ────────────────────────────────────
-      # 需要 nixpkgs.config.allowUnfree = true（已在 default.nix 打开）
+      # 需要 nixpkgs.config.allowUnfree = true（已在 configuration.nix 打开）
       bilibili
 
       # ── 备用方案 A：mpv + yt-dlp 直接看 B 站 ───────────────
@@ -79,7 +70,6 @@
   #          'https://www.bilibili.com/video/BVxxxxxxxxx'
   #      （--ytdl-format 强制挑选 avc1 编码的视频流，
   #        避免 yt-dlp 默认选到 4K 的 HEVC 流让老 CPU 软解）
-  #      这条命令对应的默认配置已经写进 home/qanix/media.nix 的 mpv.conf。
   #
   #  ── 如果你只是想要一个"能看 B 站"的备胎 ──────────────────
   #      Flathub 上有第三方客户端 wiliwili（应用 ID: cn.xfangfang.wiliwili），

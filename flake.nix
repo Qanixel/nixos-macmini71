@@ -3,18 +3,21 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+
+    # nixos-unstable 对应 home-manager 的 master 分支；
+    # follows 让 home-manager 复用同一份 nixpkgs，避免两份依赖。
     home-manager.url = "github:nix-community/home-manager/master";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
-    
-    mirrors-nix.url = "github:luochen1990/mirrors-nix";
-    
-    spicetify-nix.url = "github:Gerg-L/spicetify-nix";
-  };
-  
-  # homemanager 的说明： follow 关键字用于继承，release-26.05 用于 与 nixos 保持一致
-  # 记得inputs里写完后下面output要继承
 
-  outputs = inputs@{ self, nixpkgs, home-manager, mirrors-nix, ... }: {
+    mirrors-nix.url = "github:luochen1990/mirrors-nix";
+
+    spicetify-nix.url = "github:Gerg-L/spicetify-nix";
+    spicetify-nix.inputs.nixpkgs.follows = "nixpkgs";
+  };
+
+  # 注意：inputs 里新增的依赖，需要在下面 outputs 的参数里继承（inputs@ 已包含全部）。
+
+  outputs = inputs@{ nixpkgs, home-manager, mirrors-nix, ... }: {
     nixosConfigurations = {
       Macmini = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";

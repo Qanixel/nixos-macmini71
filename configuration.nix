@@ -41,7 +41,10 @@
 
   # ==================== 网络与主机名 ====================
   networking.hostName = "Macmini";
-  networking.wireless.iwd.enable = true; # 网传 iwd 有奇效
+  # NetworkManager 的 iwd 后端（比 wpa_supplicant 连接更快更稳）。
+  # 注意：iwd 后端已隐含启用 iwd；显式打开 networking.wireless.iwd
+  # 是为了独立使用 iwctl 排查问题，二者不冲突。
+  networking.wireless.iwd.enable = true;
   networking.networkmanager = {
     enable = true;
     wifi.backend = "iwd";
@@ -54,21 +57,20 @@
   boot.blacklistedKernelModules = [ "b43" "bcma" "brcmfmac" "brcmsmac" "ssb" "mac80211" ];
 
   nixpkgs.config.allowUnfree = true;
+  # broadcom-sta 被标记为 insecure，版本号会随内核升级变化，
+  # rebuild 报版本不匹配时按提示更新此列表。
   nixpkgs.config.permittedInsecurePackages = [
     "broadcom-sta-6.30.223.271-59-6.18.54"
     "broadcom-sta-6.30.223.271-59-7.2.7"
+    "broadcom-sta-6.30.223.271-63-6.18.59"
   ];
-
-
-  services.printing.enable = false;
 
   # ==================== 用户与软件包 ====================
 
-  users.users."qanix" = {
+  users.users.qanix = {
     isNormalUser = true;
     description = "Qanix";
     extraGroups = [ "networkmanager" "wheel" ];
-    packages = with pkgs; [];
     shell = pkgs.zsh;
   };
 
@@ -77,7 +79,6 @@
   programs.firefox.enable = true;
   programs.fish.enable = true;
   programs.zsh.enable = true;
-
 
   environment.variables.EDITOR = "vim";
   environment.systemPackages = with pkgs; [
@@ -89,7 +90,7 @@
   ];
 
   # ==================== 系统维护与 GC ====================
- 
+
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
   nix.gc = {

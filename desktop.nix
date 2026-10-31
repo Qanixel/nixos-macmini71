@@ -10,7 +10,6 @@
   services.displayManager.defaultSession = "xfce";
   services.xserver.displayManager.lightdm.enable = true;
 
-
   # Optional: Install extra Xfce goodies and tools
   environment.systemPackages = with pkgs; [
     xfce4-pulseaudio-plugin # Volume applet for the panel
@@ -20,8 +19,8 @@
   services.displayManager.autoLogin.enable = true;
   services.displayManager.autoLogin.user = "qanix";
 
-  # Kerying
-  services.gnome.gnome-keyring.enable = true; 
+  # Keyring
+  services.gnome.gnome-keyring.enable = true;
   security.pam.services.login.enableGnomeKeyring = true;
   programs.seahorse.enable = true;
 

@@ -8,11 +8,9 @@
   hardware.uinput.enable = true;
 
   # 将你的用户加入自动生成的 uinput 用户组
-  users.users.qanix.extraGroups = [ "uinput" "input" ]; 
-
+  users.users.qanix.extraGroups = [ "uinput" "input" ];
 
   # 启用 KDE Connect 模块
   programs.kdeconnect.enable = true;
-
 }
 

@@ -60,7 +60,6 @@
     iperf3
     dnsutils  # `dig` + `nslookup`
     ldns # replacement of `dig`, it provide the command `drill`
-    aria2 # A lightweight multi-protocol & multi-source command-line download utility
     socat # replacement of openbsd-netcat
     nmap # A utility for network discovery and security auditing
     ipcalc  # it is a calculator for the IPv4/v6 addresses
@@ -99,11 +98,11 @@
     sysstat
     lm_sensors # for `sensors` command
     ethtool
-    pciutils # lspci
     usbutils # lsusb
 
     # some software
     # xxx
+    splayer-next
   ];
 
   # git 相关配置
@@ -140,12 +139,16 @@
     };
   };
 
+  # 所有 shell 共享的别名（bash / zsh / fish 都会生效）
+  home.shellAliases = {
+    nu = "sudo nixos-rebuild switch --flake /home/qanix/nixos-config#Macmini";
+  };
+
   programs.bash = {
     enable = true;
     enableCompletion = true;
     shellAliases = {
       k = "kubectl";
-      nu = "sudo nixos-rebuild switch --flake /home/qanix/nixos-config#Macmini";
     };
   };
 
@@ -155,9 +158,7 @@
     autosuggestion.enable = true;
     syntaxHighlighting.enable = true;
     shellAliases = {
-      nu = "sudo nixos-rebuild switch --flake /home/qanix/nixos-config#Macmini";
       ls = "lsd";
-      
     };
     oh-my-zsh = {
       enable = true;
