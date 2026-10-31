@@ -141,7 +141,7 @@
 
   # 所有 shell 共享的别名（bash / zsh / fish 都会生效）
   home.shellAliases = {
-    nu = "sudo nixos-rebuild switch --flake /home/qanix/nixos-config#Macmini";
+    nu = "sudo nixos-rebuild switch --flake /home/qanix/nixos-macmini71#Macmini";
   };
 
   programs.bash = {
