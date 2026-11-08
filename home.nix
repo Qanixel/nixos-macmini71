@@ -81,6 +81,14 @@
     # with more details log output
     nix-output-monitor
 
+    # Nix 调试 / 开发工具
+    nix-diff          # 对比两个 derivation 的构建输入差异
+    nix-tree          # 交互式浏览 store 路径的依赖树与闭包大小
+    nixfmt            # 官方 Nix 代码格式化（RFC 166 风格）
+    deadnix           # 查找未使用的 let 绑定 / 函数参数
+    statix            # Nix 代码 lint（反模式检查）
+    nixd              # Nix language server（VS Code / neovim 补全与跳转）
+
     # productivity
     hugo # static site generator
     glow # markdown previewer in terminal
@@ -99,6 +107,9 @@
     lm_sensors # for `sensors` command
     ethtool
     usbutils # lsusb
+
+    # 终端复用：远程会话断线后可 attach 恢复（配合 debug.nix 的 linger）
+    zellij
 
     # some software
     # xxx
@@ -187,6 +198,18 @@
     enableFishIntegration = true;
     enableZshIntegration = true;
     enableBashIntegration = true;
+  };
+
+  # zellij：终端复用器。默认不自动接管新终端，手动 `zellij` 启动，
+  # 断线重连后 `zellij attach` 恢复；会话由 linger 保活。
+  programs.zellij = {
+    enable = true;
+  };
+
+  # direnv + nix-direnv：进入含 .envrc（use flake）的目录自动加载开发环境
+  programs.direnv = {
+    enable = true;
+    nix-direnv.enable = true;
   };
 
 

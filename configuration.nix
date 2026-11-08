@@ -13,6 +13,7 @@
     ./flatpak.nix
     ./remote.nix
     ./server.nix
+    ./debug.nix
     ./desktop.nix
     ./terminal.nix
   ];
