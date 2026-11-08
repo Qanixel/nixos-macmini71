@@ -23,15 +23,15 @@
         system = "x86_64-linux";
         specialArgs = { inherit inputs; };
         modules = [
-          ./hardware-configuration.nix
-          ./configuration.nix
+          ./hosts/Macmini/hardware-configuration.nix
+          ./hosts/Macmini/default.nix
           mirrors-nix.nixosModules.default 
           home-manager.nixosModules.home-manager
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
             home-manager.extraSpecialArgs = { inherit inputs ; };
-            home-manager.users.qanix = ./home.nix;
+            home-manager.users.qanix = ./home/default.nix;
             home-manager.backupFileExtension = "backup";
           }
         ];

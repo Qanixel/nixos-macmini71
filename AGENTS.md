@@ -31,7 +31,7 @@ Host Macmini
 
 ```bash
 ssh Macmini                 # 公钥登录（主用）
-ssh qanix@192.168.1.132     # 密码登录仍作为后备（server.nix 显式保留）
+ssh qanix@192.168.1.132     # 密码登录仍作为后备（modules/system/server.nix 显式保留）
 ```
 
 服务端 `PermitRootLogin = "no"`，请始终用 `qanix` 登录后再 `sudo`。
@@ -57,13 +57,13 @@ rsync -rlpt --no-owner --no-group ./local-dir/ Macmini:/home/qanix/nixos-macmini
 
 1. 安装扩展 `ms-vscode-remote.remote-ssh`。
 2. 连接 `qanix@192.168.1.132`（或上面 `Macmini` 别名），首次会往 `~/.vscode-server` 安装服务端。
-3. `programs.nix-ld.enable = true`（`debug.nix`）让 VS Code 服务端及扩展附带的预编译二进制可直接运行；
+3. `programs.nix-ld.enable = true`（`modules/system/debug.nix`）让 VS Code 服务端及扩展附带的预编译二进制可直接运行；
    若某扩展报缺共享库，把它加入 `programs.nix-ld.libraries` 后重建。
-4. 推荐再装 `jnoortheen.nix-ide`，语言服务器选 `nixd`（本仓库 `home.nix` 已安装），格式化用 `nixfmt`。
+4. 推荐再装 `jnoortheen.nix-ide`，语言服务器选 `nixd`（本仓库 `home/packages.nix` 已安装），格式化用 `nixfmt`。
 
 ### zellij 持久会话
 
-`home.nix` 已启用 `programs.zellij`，`debug.nix` 已设置 `users.users.qanix.linger = true`，
+`home/shell.nix` 已启用 `programs.zellij`，`modules/system/debug.nix` 已设置 `users.users.qanix.linger = true`，
 因此 SSH 断开后 user systemd 会话不退出，zellij 服务端继续存活：
 
 ```bash
@@ -77,29 +77,37 @@ zellij attach -c work    # 新建/接入名为 work 的会话
 ## 3. 仓库结构与模块地图
 
 ```
-flake.nix                     # flake 入口；nixosConfigurations.Macmini
-configuration.nix             # 系统主体：引导、网络、用户、软件包、GC
-server.nix                    # OpenSSH 设置 + mosh
-debug.nix                     # 远程调试支撑：nix-ld、linger
-home.nix                      # home-manager 用户环境（shell、CLI、zellij、direnv）
-home/spotify.nix              # home-manager 子模块（spicetify）
-hardware-configuration.nix    # 磁盘/硬件探测结果，禁止手改
-desktop.nix                   # XFCE + lightdm（qanix 自动登录）
-remote.nix                    # uinput、KDE Connect、onboard 屏幕键盘
-terminal.nix                  # kitty terminfo
-bilibili.nix                  # bilibili 客户端与 mpv/yt-dlp
-mpfan.nix / timer.nix / pipewire.nix / flatpak.nix
-TODO.md                       # 待办（配置分体化等）
+flake.nix                                  # flake 入口；nixosConfigurations.Macmini
+hosts/Macmini/default.nix                  # 系统主体：引导、网络、用户、软件包、GC
+hosts/Macmini/hardware-configuration.nix   # 磁盘/硬件探测结果，禁止手改
+modules/system/server.nix                  # OpenSSH 设置 + mosh
+modules/system/debug.nix                   # 远程调试支撑：nix-ld、linger
+modules/system/terminal.nix                # kitty terminfo
+modules/hardware/mpfan.nix                 # 风扇控制
+modules/services/pipewire.nix              # 音频
+modules/services/flatpak.nix               # Flatpak
+modules/services/timer.nix                 # 定时任务
+modules/desktop/desktop.nix                # XFCE + lightdm（qanix 自动登录）
+modules/desktop/remote.nix                 # uinput、KDE Connect、onboard 屏幕键盘
+modules/desktop/bilibili.nix               # bilibili 客户端与 mpv/yt-dlp
+home/default.nix                           # home-manager 用户入口（imports / 身份 / stateVersion）
+home/packages.nix                          # 用户级 CLI 与 GUI 软件包
+home/shell.nix                             # 别名、bash/zsh/fish、fzf、zoxide、zellij、direnv
+home/programs.nix                          # git、starship、alacritty
+home/spotify.nix                           # home-manager 子模块（spicetify）
+TODO.md                                    # 待办
 ```
 
-规则：新功能尽量做成独立 `.nix` 模块，再在 `configuration.nix` 的 `imports`（系统级）
-或 `home.nix` 的 `imports`（用户级）中挂载。不要手改 `hardware-configuration.nix`。
+规则：系统模块放到 `modules/<system|hardware|services|desktop>/`，用户模块放到 `home/`，
+然后在对应入口的 `imports` 中挂载——系统级是 `hosts/Macmini/default.nix`，用户级是
+`home/default.nix`。不要手改 `hosts/Macmini/hardware-configuration.nix`；
+`nixos-generate-config` 生成的新文件需要手动覆盖到该路径。
 
 ## 4. 修改 → 求值 → 重建 → 复核
 
 ```bash
 # 1) 编辑后先做语法检查（在仓库根目录）
-nix-instantiate --parse configuration.nix >/dev/null
+nix-instantiate --parse $(git ls-files '*.nix') >/dev/null
 nixfmt --check .              # 可选，保持风格
 deadnix -f .                  # 可选，查未使用绑定
 statix check .                # 可选，lint
@@ -126,7 +134,7 @@ nixos-rebuild list-generations           # 查看全部 generation
 
 ## 5. 调试工具箱
 
-已随 `home.nix` 安装：`nix-diff`、`nix-tree`、`nixfmt`、`deadnix`、`statix`、`nixd`、
+已随 `home/packages.nix` 安装：`nix-diff`、`nix-tree`、`nixfmt`、`deadnix`、`statix`、`nixd`、
 `nix-output-monitor`（`nom`）、`direnv` + `nix-direnv`、`zellij`。
 
 ```bash
@@ -152,7 +160,7 @@ direnv：在仓库根执行一次 `direnv allow` 后，进入目录自动加载 
 - 家目录 `700`、`~/.ssh` `700`、`authorized_keys` `600`；新增公钥直接追加到
   `~/.ssh/authorized_keys`，不要放宽目录权限。
 - `PermitRootLogin = "no"`；密码登录保留为后备，公钥是主认证。等所有常用设备都有公钥后，
-  可把 `PasswordAuthentication` 改为 `false`（改 `server.nix` 并重建）。
+  可把 `PasswordAuthentication` 改为 `false`（改 `modules/system/server.nix` 并重建）。
 - GitHub 访问使用仓库级 **Deploy Key**：私钥 `~/.ssh/github_qanix`（`600`），只对本仓库有写权限，
   机器上不保存 GitHub token，也不用 `gh`。
 - 提交前确认没有私钥、token、密码进入仓库；`.gitignore` 已忽略 `result/`、`.direnv/`、
@@ -183,10 +191,10 @@ Deploy key 需在仓库 `Settings → Deploy keys` 添加，并勾选 **Allow wr
 ## 8. 已知坑
 
 - **Broadcom BCM4360 Wi-Fi**：使用 `broadcom_sta` 并 blacklist 开源驱动；`broadcom-sta` 是 insecure
-  包，版本号固定在 `configuration.nix` 的 `permittedInsecurePackages` 中。升级内核后若求值报
+  包，版本号固定在 `hosts/Macmini/default.nix` 的 `permittedInsecurePackages` 中。升级内核后若求值报
   insecure 错误，需把新版本号加入该列表。Wi-Fi 由 `iwd` 后端 + NetworkManager 管理，
   用 `nmcli device wifi list` / `nmcli device wifi connect`。
-- **视频硬解**：Haswell 仅支持 H.264，H.265/VP9 会走软解（见 `bilibili.nix` 注释）。
+- **视频硬解**：Haswell 仅支持 H.264，H.265/VP9 会走软解（见 `modules/desktop/bilibili.nix` 注释）。
 - **home-manager 文件冲突**：已有同名文件会被重命名为 `*.backup`（`backupFileExtension = "backup"`），
   冲突时先看 `.backup` 再决定去留。
 - **镜像**：`mirrors.enable = true`（mirrors-nix）会替换 substituter；若下载报 404/超时，

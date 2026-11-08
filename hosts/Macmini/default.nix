@@ -6,16 +6,16 @@
 
 {
   imports = [
-    ./mpfan.nix
-    ./bilibili.nix
-    ./timer.nix
-    ./pipewire.nix
-    ./flatpak.nix
-    ./remote.nix
-    ./server.nix
-    ./debug.nix
-    ./desktop.nix
-    ./terminal.nix
+    ../../modules/hardware/mpfan.nix
+    ../../modules/desktop/bilibili.nix
+    ../../modules/services/timer.nix
+    ../../modules/services/pipewire.nix
+    ../../modules/services/flatpak.nix
+    ../../modules/desktop/remote.nix
+    ../../modules/system/server.nix
+    ../../modules/system/debug.nix
+    ../../modules/desktop/desktop.nix
+    ../../modules/system/terminal.nix
   ];
 
   mirrors.enable = true;
