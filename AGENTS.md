@@ -96,7 +96,7 @@ home/packages.nix                          # 用户级 CLI 与 GUI 软件包
 home/shell.nix                             # 别名、bash/zsh/fish、fzf、zoxide、zellij、direnv
 home/programs.nix                          # git、starship、alacritty
 home/xfce.nix                              # XFCE 电源管理：DPMS 熄屏
-home/audio.nix                             # EasyEffects 输出处理与安全限幅
+home/audio.nix                             # EasyEffects 响度归一化与限幅
 home/spotify.nix                           # home-manager 子模块（spicetify）
 TODO.md                                    # 待办
 ```
@@ -187,8 +187,14 @@ nixos-rebuild list-generations           # 查看全部 generation
 
 - 物理 USB DAC 仍是系统默认 sink；EasyEffects 用 `EffectsPipelines.processAllOutputs = true`
   把应用输出自动接到自己的虚拟 sink，**不把虚拟 sink 设为默认**（上游推荐做法，避免环路和路由混乱）。
-- 启动时加载 output preset `Macmini`：只有一个 limiter，`threshold = -1.0` dBFS、
-  `gain-boost = false`，只做峰值保护，不加 EQ/压缩/自动增益，不改变原有音色。
+- 启动时加载 output preset `Macmini`，链路为 `autogain#0` → `limiter#0`：
+  - autogain：EBU R128 响度归一化，`target = -24.0` LUFS、
+    `reference = "Geometric Mean (MSI)"`、`maximum-history = 15` 秒、
+    `silence-threshold = -70.0` dBFS；用于拉平不同应用/视频之间的响度差。
+  - limiter：`threshold = -1.5` dBFS、`gain-boost = false`，只兜底峰值，不做自动增益补偿。
+  - `target` 数值越低越安静（-20 比 -23 更响，-26 比 -24 更安静）；若整体仍偏大，
+    可把 autogain 的 `output-gain` 调到 `-3.0`/`-6.0`，再考虑更低的 `target`。
+  - Nix 只提供可复现的基础骨架；GUI 里临时微调只影响运行态，满意的参数可另存 preset 或写回这里。
 - 依赖系统已启用的 `programs.dconf`（见 `modules/desktop/remote.nix`）。
 
 复核：
@@ -210,6 +216,11 @@ ls ~/.local/share/easyeffects/output/Macmini.json
 排障/回退：
 
 - EasyEffects 没起来：`systemctl --user start easyeffects`，再看 journal。
+- 响度忽大忽小或“抽动”：把 autogain 的 `maximum-history` 调大（如 15 → 30）会更稳，
+  `reference` 可换 `Geometric Mean (MS)` / `Shortterm`；目标响度改 `target`。
+- 整体仍偏大：先调 autogain 的 `output-gain`（`-3.0` / `-6.0`），再降 `target`；
+  limiter 的 `threshold` 只管峰值，不改变平均响度。
+- 想在 GUI 里试参数：直接运行 `easyeffects`；GUI 修改只影响当前运行态，满意后需写回 `home/audio.nix` 才会持久化。
 - 不想让 EE 处理所有输出：把 `EffectsPipelines.processAllOutputs` 改为 `false` 后重建，
   或临时 `systemctl --user stop easyeffects`。
 - 完全回到旧行为：`sudo nixos-rebuild switch --rollback`，或 `git revert` 后重建。

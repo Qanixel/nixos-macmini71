@@ -13,16 +13,33 @@
       output = "Macmini";
     };
 
-    # 只做透明的峰值保护：-1 dBFS、关闭自动增益补偿。
-    # 不添加 EQ / 压缩 / 声场效果，避免改变原有听感。
+    # 基础链路：autogain 做 EBU R128 响度归一化，limiter 兜底峰值。
+    # target 的数值越低越安静：-24 LUFS 比 EBU R128 默认的 -23 略低。
+    # 若整体仍偏大，可先把 autogain 的 output-gain 调到 -3 / -6，再考虑更低 target。
+    # 日常微调可以在 EasyEffects GUI 里做；GUI 修改只影响运行态，固化需改回这里。
     extraPresets = {
       Macmini = {
         output = {
           blocklist = [ ];
-          plugins_order = [ "limiter#0" ];
+
+          plugins_order = [
+            "autogain#0"
+            "limiter#0"
+          ];
+
+          "autogain#0" = {
+            bypass = false;
+            target = -24.0;
+            reference = "Geometric Mean (MSI)";
+            "maximum-history" = 15;
+            "silence-threshold" = -70.0;
+            "input-gain" = 0.0;
+            "output-gain" = 0.0;
+          };
+
           "limiter#0" = {
             bypass = false;
-            threshold = -1.0;
+            threshold = -1.5;
             "gain-boost" = false;
           };
         };
