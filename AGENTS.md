@@ -216,6 +216,9 @@ ls ~/.local/share/easyeffects/output/Macmini.json
 排障/回退：
 
 - EasyEffects 没起来：`systemctl --user start easyeffects`，再看 journal。
+- 改完 preset 但链路没变：`nixos-rebuild switch` 不一定会重启已在运行的 user service，
+  执行 `systemctl --user restart easyeffects`，再用 `wpctl status` 确认
+  `ee_soe_autogain` / `ee_soe_limiter` 都已出现。
 - 响度忽大忽小或“抽动”：把 autogain 的 `maximum-history` 调大（如 15 → 30）会更稳，
   `reference` 可换 `Geometric Mean (MS)` / `Shortterm`；目标响度改 `target`。
 - 整体仍偏大：先调 autogain 的 `output-gain`（`-3.0` / `-6.0`），再降 `target`；
