@@ -17,10 +17,8 @@
     "vm.vfs_cache_pressure" = 50;
   };
 
-  # SATA 链路省电。Apple SSD 支持 DIPM 时会生效；不支持时驱动会忽略，保持原策略，无副作用。
-  services.udev.extraRules = ''
-    ACTION=="add|change", SUBSYSTEM=="scsi_host", KERNEL=="host*", ATTR{link_power_management_policy}="med_power_with_dipm"
-  '';
+  # 注：本机 Apple SSD 的 AHCI 控制器对 link_power_management_policy 的所有非
+  # max_performance 写入都返回 EOPNOTSUPP/EINVAL（2026-11-08 实测），因此不启用 SATA ALPM。
 
   # 性能/功耗观测工具；intel_gpu_top 也补上了 bilibili.nix 文档里提到但当前未安装的命令。
   environment.systemPackages = with pkgs; [

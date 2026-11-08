@@ -82,7 +82,7 @@ hosts/Macmini/default.nix                  # 系统主体：引导、网络、�
 hosts/Macmini/hardware-configuration.nix   # 磁盘/硬件探测结果，禁止手改
 modules/system/server.nix                  # OpenSSH 设置 + mosh
 modules/system/debug.nix                   # 远程调试支撑：nix-ld、linger
-modules/system/performance.nix             # 性能/功耗：zram、sysctl、SATA ALPM、观测工具
+modules/system/performance.nix             # 性能/功耗：zram、sysctl、观测工具（SATA ALPM 本机不支持）
 modules/system/terminal.nix                # kitty terminfo
 modules/hardware/mpfan.nix                 # 风扇控制
 modules/services/pipewire.nix              # 音频
@@ -135,14 +135,17 @@ xfconf-query -c xfce4-power-manager -p /xfce4-power-manager/dpms-enabled
 
 ### 性能与功耗
 
-`modules/system/performance.nix` 只做四项低风险调整，均可独立回滚：
+`modules/system/performance.nix` 做三项系统级低风险调整；桌面 DPMS 在 `home/xfce.nix`，两者均可独立回滚。
 
 | 项目 | 配置 | 复核 |
 | --- | --- | --- |
 | zram swap | 16 GiB 的 25%，zstd，priority 100 | `zramctl`、`swapon --show`、`cat /sys/block/zram0/comp_algorithm` |
 | zram 相关 sysctl | `swappiness=100`、`page-cluster=0`、`vfs_cache_pressure=50` | `sysctl vm.swappiness vm.page-cluster vm.vfs_cache_pressure` |
-| SATA 链路省电 | udev 将 `link_power_management_policy` 设为 `med_power_with_dipm` | `cat /sys/class/scsi_host/host0/link_power_management_policy`（仍为 `max_performance` 表示硬件不支持，属正常） |
 | 启动菜单 | `boot.loader.timeout = 1`（原 5 秒） | `systemd-analyze` 看 loader 时间；开机按方向键/空格可停住菜单 |
+
+SATA ALPM 实测不可用：本机 Apple SSD 的 AHCI 控制器对 `link_power_management_policy` 的所有非
+`max_performance` 写入都返回 `EOPNOTSUPP`/`EINVAL`，因此配置中没有 udev 规则；
+`/sys/class/scsi_host/host0/link_power_management_policy` 保持 `max_performance` 属于预期。
 
 `home/xfce.nix` 打开 XFCE 的 DPMS：空闲 10 分钟挂起、15 分钟关显示器。若看视频时被误熄屏，
 把 `dpms-on-ac-sleep/off` 改大或删除该属性；运行时可用
@@ -161,9 +164,8 @@ sudo turbostat --summary --quiet --show PkgWatt,CorWatt,GFXWatt
 sudo intel_gpu_top            # 看 Video 引擎，验证硬解
 ```
 
-回滚：删除或注释 `modules/system/performance.nix` 中对应段落、`home/xfce.nix` 中的 DPMS 属性，
-重新求值后由用户重建；SATA 可先运行时
-`echo max_performance | sudo tee /sys/class/scsi_host/host0/link_power_management_policy` 验证。
+单项回滚：删除或注释 `modules/system/performance.nix` 中对应段落、`home/xfce.nix` 中的 DPMS 属性，
+重新求值后由用户重建。
 
 回滚：
 
@@ -247,6 +249,8 @@ Deploy key 需在仓库 `Settings → Deploy keys` 添加，并勾选 **Allow wr
 - **DPMS 15 分钟熄屏**：由 `home/xfce.nix` 设置；看视频被误熄屏时调大 `dpms-on-ac-sleep/off` 或删除属性。
 - **zram 不是磁盘 swap**：`swapon --show` 里 `/dev/zram0` 的大小是未压缩容量；内存吃紧时先看
   `zramctl` 的 DATA/COMPR，必要时把 `memoryPercent` 从 25 调到 50。
+- **SATA ALPM 不可用**：Apple SSD/AHCI 对所有非 `max_performance` 策略写入返回 `EOPNOTSUPP`/`EINVAL`；
+  不要再加 `link_power_management_policy` 的 udev 规则，保持默认即可。
 
 ## 9. 常用命令速查
 
