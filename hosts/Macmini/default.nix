@@ -14,6 +14,7 @@
     ../../modules/desktop/remote.nix
     ../../modules/system/server.nix
     ../../modules/system/debug.nix
+    ../../modules/system/performance.nix
     ../../modules/desktop/desktop.nix
     ../../modules/system/terminal.nix
   ];
@@ -23,6 +24,8 @@
   # ==================== 引导与系统基础 ====================
   boot.loader.systemd-boot.enable = true;
   boot.loader.systemd-boot.configurationLimit = 5;
+  # 菜单只停 1 秒，省约 4 秒启动时间；开机时按方向键/空格仍可停住菜单。
+  boot.loader.timeout = 1;
   boot.loader.efi.canTouchEfiVariables = true;
 
   time.timeZone = "Asia/Shanghai";

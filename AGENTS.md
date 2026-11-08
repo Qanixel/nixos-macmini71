@@ -82,6 +82,7 @@ hosts/Macmini/default.nix                  # 系统主体：引导、网络、�
 hosts/Macmini/hardware-configuration.nix   # 磁盘/硬件探测结果，禁止手改
 modules/system/server.nix                  # OpenSSH 设置 + mosh
 modules/system/debug.nix                   # 远程调试支撑：nix-ld、linger
+modules/system/performance.nix             # 性能/功耗：zram、sysctl、SATA ALPM、观测工具
 modules/system/terminal.nix                # kitty terminfo
 modules/hardware/mpfan.nix                 # 风扇控制
 modules/services/pipewire.nix              # 音频
@@ -94,6 +95,7 @@ home/default.nix                           # home-manager 用户入口（imports
 home/packages.nix                          # 用户级 CLI 与 GUI 软件包
 home/shell.nix                             # 别名、bash/zsh/fish、fzf、zoxide、zellij、direnv
 home/programs.nix                          # git、starship、alacritty
+home/xfce.nix                              # XFCE 电源管理：DPMS 熄屏
 home/spotify.nix                           # home-manager 子模块（spicetify）
 TODO.md                                    # 待办
 ```
@@ -122,7 +124,46 @@ sudo nixos-rebuild switch --flake /home/qanix/nixos-macmini71#Macmini   # 或别
 sshd -T | grep -Ei 'permitrootlogin|passwordauthentication|kbdinteractive'
 loginctl show-user qanix -p Linger
 command -v zellij nix-diff nix-tree nixd nixfmt deadnix statix
+
+# 5) 性能/功耗复核（详见下方“性能与功耗”）
+systemd-analyze
+zramctl; swapon --show
+sysctl vm.swappiness vm.page-cluster vm.vfs_cache_pressure
+cat /sys/class/scsi_host/host0/link_power_management_policy
+xfconf-query -c xfce4-power-manager -p /xfce4-power-manager/dpms-enabled
 ```
+
+### 性能与功耗
+
+`modules/system/performance.nix` 只做四项低风险调整，均可独立回滚：
+
+| 项目 | 配置 | 复核 |
+| --- | --- | --- |
+| zram swap | 16 GiB 的 25%，zstd，priority 100 | `zramctl`、`swapon --show`、`cat /sys/block/zram0/comp_algorithm` |
+| zram 相关 sysctl | `swappiness=100`、`page-cluster=0`、`vfs_cache_pressure=50` | `sysctl vm.swappiness vm.page-cluster vm.vfs_cache_pressure` |
+| SATA 链路省电 | udev 将 `link_power_management_policy` 设为 `med_power_with_dipm` | `cat /sys/class/scsi_host/host0/link_power_management_policy`（仍为 `max_performance` 表示硬件不支持，属正常） |
+| 启动菜单 | `boot.loader.timeout = 1`（原 5 秒） | `systemd-analyze` 看 loader 时间；开机按方向键/空格可停住菜单 |
+
+`home/xfce.nix` 打开 XFCE 的 DPMS：空闲 10 分钟挂起、15 分钟关显示器。若看视频时被误熄屏，
+把 `dpms-on-ac-sleep/off` 改大或删除该属性；运行时可用
+`xfconf-query -c xfce4-power-manager -p /xfce4-power-manager/dpms-enabled -s false` 临时关闭。
+
+功耗采样（RAPL package，不能代表显示器等墙插功耗）：
+
+```bash
+sudo sh -c '
+  a=$(cat /sys/class/powercap/intel-rapl:0/energy_uj); sleep 3
+  b=$(cat /sys/class/powercap/intel-rapl:0/energy_uj)
+  echo $(( (b-a)/3000000 )) W
+'
+sudo powertop --time=30       # 观察 top offenders
+sudo turbostat --summary --quiet --show PkgWatt,CorWatt,GFXWatt
+sudo intel_gpu_top            # 看 Video 引擎，验证硬解
+```
+
+回滚：删除或注释 `modules/system/performance.nix` 中对应段落、`home/xfce.nix` 中的 DPMS 属性，
+重新求值后由用户重建；SATA 可先运行时
+`echo max_performance | sudo tee /sys/class/scsi_host/host0/link_power_management_policy` 验证。
 
 回滚：
 
@@ -136,6 +177,8 @@ nixos-rebuild list-generations           # 查看全部 generation
 
 已随 `home/packages.nix` 安装：`nix-diff`、`nix-tree`、`nixfmt`、`deadnix`、`statix`、`nixd`、
 `nix-output-monitor`（`nom`）、`direnv` + `nix-direnv`、`zellij`。
+性能/功耗观测工具 `powertop`、`turbostat`、`cpupower`、`intel_gpu_top` 由
+`modules/system/performance.nix` 安装。
 
 ```bash
 nix eval .#nixosConfigurations.Macmini.config.services.openssh.settings   # 查某个最终配置值
@@ -200,6 +243,10 @@ Deploy key 需在仓库 `Settings → Deploy keys` 添加，并勾选 **Allow wr
 - **镜像**：`mirrors.enable = true`（mirrors-nix）会替换 substituter；若下载报 404/超时，
   检查 `/etc/nix/nix.conf` 的 `substituters`，必要时临时 `--option substituters https://cache.nixos.org`。
 - **systemd-boot 只留 5 个 generation**：`configurationLimit = 5`，旧代会被清理，回滚要趁早。
+- **启动菜单只停 1 秒**：`boot.loader.timeout = 1`；开机时按方向键/空格可停住菜单，需要固定菜单时改成 `3`。
+- **DPMS 15 分钟熄屏**：由 `home/xfce.nix` 设置；看视频被误熄屏时调大 `dpms-on-ac-sleep/off` 或删除属性。
+- **zram 不是磁盘 swap**：`swapon --show` 里 `/dev/zram0` 的大小是未压缩容量；内存吃紧时先看
+  `zramctl` 的 DATA/COMPR，必要时把 `memoryPercent` 从 25 调到 50。
 
 ## 9. 常用命令速查
 
@@ -210,6 +257,9 @@ sudo nixos-rebuild switch --flake .#Macmini  # 重建（用户执行）
 sudo nixos-rebuild switch --rollback         # 回滚
 nix flake check                              # flake 健全性检查
 nix eval --raw .#nixosConfigurations.Macmini.config.system.build.toplevel.drvPath
+systemd-analyze                              # 启动耗时
+zramctl; swapon --show                       # zram 状态
+sudo powertop --time=30                      # 功耗/唤醒源
 git -C /home/qanix/nixos-macmini71 status
 git -C /home/qanix/nixos-macmini71 push origin main
 ```
