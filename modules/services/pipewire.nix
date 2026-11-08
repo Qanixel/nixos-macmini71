@@ -1,9 +1,5 @@
-{ config, pkgs, lib, ... }:
+{ pkgs, ... }:
 
-let
-  # 可在此处方便地调整音量硬上限百分比（例如设置为 30，或设为 null 完全关闭限制）
-  ampMaxVolumePercent = 60;
-in
 {
   # ═══════════════════════════════════════════════════════════
   #  3) 音频：PipeWire（EasyEffects 的前置条件）
@@ -21,42 +17,20 @@ in
     # ── WirePlumber 配置 ────────────────────────────────────
     # 每一项会写成 wireplumber 配置目录下的一个 .conf 文件
     # （名字就是下面的键，所以用数字前缀控制加载顺序）。
-    wireplumber.extraConfig =
-      {
-        # ① 采样率与缓冲：给 EasyEffects 留出处理余量，
-        #    又不至于因为缓冲太大而在机械盘上产生爆音。
-        "10-clock-rate" = {
-          "context.properties" = {
-            "default.clock.rate" = 48000;
-            "default.clock.quantum" = 1024;
-          };
+    wireplumber.extraConfig = {
+      # 采样率与缓冲：48 kHz / 1024 frames，兼顾兼容性与延迟。
+      #
+      # 这里刻意不设置 channelmix.max-volume / lock-volumes：
+      # 设备音量使用 PipeWire 原生范围，滑块全量程有效。
+      # 峰值保护由 EasyEffects 的 limiter 负责（见 home/audio.nix），
+      # 不再用隐藏的设备级音量上限来防削波。
+      "10-clock-rate" = {
+        "context.properties" = {
+          "default.clock.rate" = 48000;
+          "default.clock.quantum" = 1024;
         };
-      }
-      # ② 音量硬上限配置
-      // lib.optionalAttrs (ampMaxVolumePercent != null) (
-        let
-          p = ampMaxVolumePercent / 100.0;
-          cubed = p * p * p;
-          # 保留 4 位小数，避免出现冗长的浮点数
-          linear = builtins.floor (cubed * 10000 + 0.5) / 10000.0;
-        in
-        {
-          "51-usb-amp-volume-cap" = {
-            "monitor.alsa.rules" = [
-              {
-                matches = [ { "node.name" = "~alsa_output\\.usb-.*Musical_Fidelity.*"; } ];
-                actions."update-props" = {
-                  "channelmix.max-volume" = linear;
-                  # 显式写出下限（默认就是 0，写出来是为了让规则自解释）
-                  "channelmix.min-volume" = 0.0;
-                  # 提示：若想让滑块也锁死，可取消下方注释
-                  "channelmix.lock-volumes" = true;
-                };
-              }
-            ];
-          };
-        }
-      );
+      };
+    };
   };
 
   # 实时调度权限：EasyEffects 的压缩器/限幅器需要实时优先级，

@@ -7,6 +7,7 @@
     ./shell.nix
     ./spotify.nix
     ./xfce.nix
+    ./audio.nix
   ];
 
   # 注意修改这里的用户名与用户目录

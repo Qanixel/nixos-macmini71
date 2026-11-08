@@ -96,6 +96,7 @@ home/packages.nix                          # 用户级 CLI 与 GUI 软件包
 home/shell.nix                             # 别名、bash/zsh/fish、fzf、zoxide、zellij、direnv
 home/programs.nix                          # git、starship、alacritty
 home/xfce.nix                              # XFCE 电源管理：DPMS 熄屏
+home/audio.nix                             # EasyEffects 输出处理与安全限幅
 home/spotify.nix                           # home-manager 子模块（spicetify）
 TODO.md                                    # 待办
 ```
@@ -124,6 +125,7 @@ sudo nixos-rebuild switch --flake /home/qanix/nixos-macmini71#Macmini   # 或别
 sshd -T | grep -Ei 'permitrootlogin|passwordauthentication|kbdinteractive'
 loginctl show-user qanix -p Linger
 command -v zellij nix-diff nix-tree nixd nixfmt deadnix statix
+systemctl --user is-active easyeffects
 
 # 5) 性能/功耗复核（详见下方“性能与功耗”）
 systemd-analyze
@@ -174,6 +176,44 @@ sudo nixos-rebuild switch --rollback     # 回到上一个 generation
 nixos-rebuild list-generations           # 查看全部 generation
 # 无法登录时：重启，在 systemd-boot 菜单里选旧 generation 启动
 ```
+
+### 音频
+
+`modules/services/pipewire.nix` 只保留 48 kHz / 1024 frames 的时钟配置，**不再设置 USB DAC 的
+`channelmix.max-volume`**。XFCE 音量滑块因此使用 PipeWire 原生范围（100% 对应 1.0，
+默认上限 1.5），不会再在某个百分比后失效。
+
+`home/audio.nix` 启用 Home Manager 的 `services.easyeffects`：
+
+- 物理 USB DAC 仍是系统默认 sink；EasyEffects 用 `EffectsPipelines.processAllOutputs = true`
+  把应用输出自动接到自己的虚拟 sink，**不把虚拟 sink 设为默认**（上游推荐做法，避免环路和路由混乱）。
+- 启动时加载 output preset `Macmini`：只有一个 limiter，`threshold = -1.0` dBFS、
+  `gain-boost = false`，只做峰值保护，不加 EQ/压缩/自动增益，不改变原有音色。
+- 依赖系统已启用的 `programs.dconf`（见 `modules/desktop/remote.nix`）。
+
+复核：
+
+```bash
+systemctl --user is-active easyeffects
+journalctl --user -u easyeffects -b --no-pager | tail -30
+wpctl status
+wpctl inspect @DEFAULT_AUDIO_SINK@ | grep -E 'node.name|channelmix'
+wpctl get-volume @DEFAULT_AUDIO_SINK@
+ls ~/.local/share/easyeffects/output/Macmini.json
+```
+
+`channelmix` 里不应再出现 `max-volume = 0.216`；默认 sink 应仍是
+`alsa_output.usb-Musical_Fidelity...`。把音量拉到 100% 以上
+（`wpctl set-volume @DEFAULT_AUDIO_SINK@ 1.2`）应能实际改变音量；`1.0` 是数字满刻度参考，
+超过 100% 属于数字增益，limiter 只处理峰值，不替代功放音量。
+
+排障/回退：
+
+- EasyEffects 没起来：`systemctl --user start easyeffects`，再看 journal。
+- 不想让 EE 处理所有输出：把 `EffectsPipelines.processAllOutputs` 改为 `false` 后重建，
+  或临时 `systemctl --user stop easyeffects`。
+- 完全回到旧行为：`sudo nixos-rebuild switch --rollback`，或 `git revert` 后重建。
+- 本机没有安装 `pactl`；用 `wpctl` / `pavucontrol`，`pw-top` 可看音频图负载。
 
 ## 5. 调试工具箱
 
